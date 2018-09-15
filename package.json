@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Babel plugin to hoist a FACC",
   "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
   "author": "Kirill Mesnyankin <sadbox.games@gmail.com>",
   "repository": {
     "url": "https://github.com/strayiker/babel-plugin-hoist-facc.git"
@@ -29,6 +32,7 @@
     "@babel/preset-env": "^7.0.0",
     "babel-core": "^7.0.0-bridge.0",
     "babel-jest": "^23.6.0",
+    "babel-plugin-hoist-facc": "^0.1.1",
     "jest": "22.1.2",
     "npm-run-all": "^4.1.3",
     "rimraf": "^2.6.2"
