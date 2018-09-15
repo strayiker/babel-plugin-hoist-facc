@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Hoist Facc",
+      "program": "${workspaceRoot}/tools/debug.js",
+      "preLaunchTask": "build-babel-plugin-hoist-facc",
+      "stopOnEntry": false,
+      "sourceMaps": true,
+      "outFiles": ["${workspaceRoot}/lib/**/*.js"]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "label": "build-babel-plugin-hoist-facc",
+      "script": "build",
+      "path": "packages/babel-plugin-hoist-facc/"
+    }
+  ]
+}
