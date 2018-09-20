@@ -18,7 +18,7 @@ yarn add babel-plugin-hoist-facc --dev
 
 ## What problem it solves?
 
-It solves the render optimizition problem that comes with `FaCC` pattern. In a few words: Function as Child Component can't be optimized with `shouldComponentUpdate` because the child function changes on render.
+It solves the render optimization problem that comes with `FaCC` pattern. In a few words: Function as Child Component can't be optimized with `shouldComponentUpdate` because the child function changes on render.
 
 This plugin hoist the child function to highest possible scope to prevent its changes.
 
