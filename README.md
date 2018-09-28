@@ -1,5 +1,7 @@
 # babel-plugin-hoist-facc
 
+> ### Note: This plugin was not intensively tested and was not actively used in production. Use it at one's own risk.
+
 > Treat [FACC](https://medium.com/merrickchristensen/function-as-child-components-5f3920a9ace9) as value types and hoist them to the highest scope
 
 ## Install
@@ -7,92 +9,108 @@
 Using npm:
 
 ```sh
-npm install --save-dev babel-plugin-hoist-facc
+npm install --save-dev @babel/core babel-plugin-hoist-facc
 ```
 
 or using yarn:
 
 ```sh
-yarn add babel-plugin-hoist-facc --dev
+yarn add @babel/core babel-plugin-hoist-facc --dev
 ```
 
 ## What problem it solves?
 
-It solves the render optimization problem that comes with `FaCC` pattern. In a few words: Function as Child Component can't be optimized with `shouldComponentUpdate` because the child function changes on render.
+It solves the problem of rendering optimization, which comes with `FaCC` pattern. In a few words: Function as Child Component can't be optimized by `shouldComponentUpdate` because the child function is always changes on render.
 
 This plugin hoist the child function to highest possible scope to prevent its changes.
 
 ## Example
 
-> input.js
-
 ```javascript
-import Super from './Super';
-
-class C extends React.Component {
+class extends React.Component {
   render() {
-    return <Super>{({ someProp }) => <div>{someProp}</div>}</Super>;
+    return <FaCC>{() => <div />}</FaCC>; // arrow function changes on each render
   }
 }
 ```
 
-> output.js
+⇩⇩⇩
 
 ```javascript
-import Super from './Super';
+var _ref = () => <div />;
 
-var _ref = ({ someProp }) => <div>{someProp}</div>;
-
-class C extends React.Component {
+class extends React.Component {
   render() {
-    return <Super>{_ref}</Super>;
+    return <FaCC>{_ref}</FaCC>; // now it's constant
   }
 }
 ```
 
-## Recomendations
+## Options
 
-Do not refer inside the `FaCC` to an identifiers from the outer scope. With this, the efficiency of hoisting will suffer.
+| Option             | Defaults | Description                                                                                                                                                                                                                              |
+| ------------------ | :------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| unsafeHoistInClass |  false   | When `true`, enables the hoisting of FaCC children function, which refers to `this`, to the class constructor. Potentially it is unsafe due to context losing issue, but in regular React life this should`t happens. See example below. |
+| loose              |  false   | When `true`, class properties are compiled to use an assignment expression instead of Object.defineProperty                                                                                                                              |
 
-> input.js
+## More examples
+
+`["hoist-facc", { unsafeHoistInClass: true, loose: true }]`
 
 ```javascript
-import Super from './Super';
+class extends React.Component {
+  handleClick = () => {};
 
-class C extends React.Component {
   render() {
-    const { prop } = this.props;
-
-    return <Super>{() => <div>{prop}</div>}</Super>;
+    return <FaCC>{() => <button onClick={this.handleClick} />}</FaCC>;
   }
 }
 ```
 
-The above code will not be transformed, because the `prop` is used inside `FaCC`.
-To avoid this, you should proxy the props from parent component (Super in this case).
-
-> input.js
+⇩⇩⇩
 
 ```javascript
-import Super from './Super';
+class extends React.Component {
+  constructor(...args) {
+    super(...args);
 
-class C extends React.Component {
+    this.handleClick = () => {};
+    this._ref = () => <button onClick={this.handleClick} />;
+  }
+
   render() {
-    return <Super {...this.props}>{({ prop }) => <div>{prop}</div>}</Super>;
+    return <FaCC>{this._ref}</FaCC>;
   }
 }
 ```
 
-> output.js
+## Pitfalls
+
+There some cases it can't be hoisted automagically.
 
 ```javascript
-import Super from './Super';
-
-var _ref = ({ prop }) => <div>{prop}</div>;
-
-class C extends React.Component {
+class extends React.Component {
   render() {
-    return <Super {...this.props}>{_ref}</Super>;
+    const { id, label } = this.props;
+
+    return <FaCC>{() => <div id={id}>{label}</div>}</FaCC>;
+  }
+}
+```
+
+The above code will not be transformed, because the `id` and `label` from the higher scope is used inside `FaCC`.
+You should proxy the props to the child function or access props directly trought `this` keyword to avoid this.
+
+```javascript
+class extends React.Component {
+  render() {
+    return (
+      <FaCC {...this.props}>
+        {({ id }) => (
+          <div id={id}>{this.props.label}</div>
+        )}
+      </FaCC>
+    );
   }
 }
 ```

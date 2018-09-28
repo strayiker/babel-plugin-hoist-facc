@@ -4,7 +4,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Hoist Facc",
+      "name": "HoistFacc Debug",
       "program": "${workspaceRoot}/tools/debug.js",
       "preLaunchTask": "build-babel-plugin-hoist-facc",
       "stopOnEntry": false,

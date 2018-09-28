@@ -4,8 +4,7 @@
     {
       "type": "npm",
       "label": "build-babel-plugin-hoist-facc",
-      "script": "build",
-      "path": "packages/babel-plugin-hoist-facc/"
+      "script": "build"
     }
   ]
 }

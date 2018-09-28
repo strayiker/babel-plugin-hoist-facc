@@ -1,0 +1,6 @@
+{
+  "plugins": [
+    ["../../../../lib", { "unsafeHoistInClass": true }],
+    "@babel/plugin-proposal-class-properties"
+  ]
+}

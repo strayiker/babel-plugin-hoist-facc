@@ -25,8 +25,18 @@ export default {
         path.isFunction() && !path.isArrowFunctionExpression();
       const fnScope = iterateTree(path.scope, 'parent', isNonArrowFn);
 
-      if (fnScope && fnScope.parent) {
-        this.breakOn.push(fnScope.parent);
+      let parent = fnScope && fnScope.parent;
+
+      if (
+        parent &&
+        parent.path.isClassDeclaration() &&
+        this.unsafeHoistInClass
+      ) {
+        parent = parent.parent;
+      }
+
+      if (parent) {
+        this.breakOn.push(parent);
       }
     }
 
@@ -44,5 +54,5 @@ export default {
     }
 
     this.bindings[path.node.name] = binding;
-  },
+  }
 };

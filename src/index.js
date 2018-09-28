@@ -5,22 +5,21 @@ import isFacc from './utils/isFacc';
 
 const TYPES = ['ArrowFunctionExpression', 'FunctionExpression'].join('|');
 
-export default declare(api => {
+export default declare((api, options) => {
   api.assertVersion(7);
 
-  const hoister = new PathHoister();
+  const hoister = new PathHoister(options);
 
   return {
     visitor: {
-      [TYPES](path) {
+      [TYPES](path, state) {
         if (!isFacc(path)) {
           return;
         }
 
-        hoister.reset(path, path.scope.parent);
-        hoister.run();
-      },
+        hoister.run(path, state);
+      }
     },
-    inherits: jsxPlugin,
+    inherits: jsxPlugin
   };
 });

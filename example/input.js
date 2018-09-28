@@ -1,11 +1,17 @@
-import SuperComponent from './SuperComponent';
+import Facc from './Facc';
 
-class C extends React.Component {
+class Component extends React.Component {
+  handleClick = () => {};
+
   render() {
+    const asd1 = 0;
     return (
-      <SuperComponent {...this.props}>
-        {({ prop }) => <div>{prop}</div>}
-      </SuperComponent>
+      <Facc>
+        {() => {
+          const { asd } = this.props;
+          return <button onClick={this.handleClick}>{asd}</button>;
+        }}
+      </Facc>
     );
   }
 }

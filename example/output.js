@@ -1,14 +1,24 @@
-import SuperComponent from './SuperComponent';
+import Facc from './Facc';
 
-var _ref = ({
-  prop
-}) => <div>{prop}</div>;
+class Component extends React.Component {
+  constructor(...args) {
+    super(...args);
 
-class C extends React.Component {
+    this.handleClick = () => {};
+
+    this._ref = () => {
+      const {
+        asd
+      } = this.props;
+      return <button onClick={this.handleClick}>{asd}</button>;
+    };
+  }
+
   render() {
-    return <SuperComponent {...this.props}>
-        {_ref}
-      </SuperComponent>;
+    const asd1 = 0;
+    return <Facc>
+        {this._ref}
+      </Facc>;
   }
 
 }

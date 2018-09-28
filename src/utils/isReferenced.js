@@ -1,4 +1,4 @@
-import * as t from '@babel/types';
+import { types as t } from '@babel/core';
 
 export default ({ node, parent }) => {
   // Dirty fix for https://github.com/babel/babel/issues/8686

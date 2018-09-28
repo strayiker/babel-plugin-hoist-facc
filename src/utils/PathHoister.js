@@ -2,38 +2,45 @@ import { types as t } from '@babel/core';
 import referenceVisitor from './referenceVisitor';
 import iterateTree from './iterateTree';
 
+const insertAfter = (path, node) => path.insertAfter(node);
+const insertBefore = (path, node) => path.insertBefore(node);
+const pushContainer = (path, node) => path.pushContainer('body', node);
+
 export default class PathHoister {
-  constructor(path) {
-    this.reset(path);
+  constructor({ loose, unsafeHoistInClass }) {
+    this.loose = loose;
+    this.unsafeHoistInClass = unsafeHoistInClass;
   }
 
   reset = path => {
-    // Storage for scopes we can't hoist.
-    this.breakOn = [];
+    // Our original path.
+    this.path = path;
     // Storage for bindings that may affect what path we can hoist to.
     this.bindings = {};
     // Storage for eligible scopes.
     this.scopes = [];
-    // Our original path.
-    this.path = path;
+    // Storage for scopes we can't hoist.
+    this.breakOn = [];
+    // Attach as member expression to "this" if in class scope
+    this.attachToThis = false;
     // By default, we attach as far up as we can; but if we're trying
     // to avoid referencing a binding, we may have to go after.
-    this.attachAfter = false;
+    this.insertFn = insertBefore;
   };
 
   // A scope is compatible if all required bindings are reachable.
   isCompatibleScope = scope =>
     !this.breakOn.includes(scope) &&
     !Object.keys(this.bindings).some(
-      key => !scope.bindingIdentifierEquals(key, this.bindings[key].identifier),
+      key => !scope.bindingIdentifierEquals(key, this.bindings[key].identifier)
     );
 
   // Look through all scopes and push compatible ones.
-  setCompatibleScopes = () =>
-    iterateTree(this.path.scope, 'parent', scope => {
+  setCompatibleScopes = path =>
+    iterateTree(path.scope, 'parent', scope => {
       if (this.isCompatibleScope(scope)) {
         // deopt: should ignore this scope since it's ourselves
-        if (scope !== this.path.scope) {
+        if (scope !== path.scope) {
           this.scopes.push(scope);
         }
         // Continue
@@ -55,18 +62,58 @@ export default class PathHoister {
       return null;
     }
 
-    if (scope.path.isProgram()) {
+    let { path } = scope;
+
+    if (path.isProgram()) {
       return this.getNextScopeAttachmentParent();
     }
 
-    if (scope.path.isFunction()) {
-      if (this.hasOwnParamBindings(scope)) {
+    if (path.isClassDeclaration()) {
+      this.insertFn = pushContainer;
+      this.attachToThis = true;
+
+      const isDerived = !!path.node.superClass;
+
+      const body = path.get('body');
+      const bodies = body.get('body');
+
+      let constructor = bodies.find(b =>
+        b.isClassMethod({ kind: 'constructor' })
+      );
+
+      if (!constructor) {
+        const newConstructor = t.classMethod(
+          'constructor',
+          t.identifier('constructor'),
+          [],
+          t.blockStatement([])
+        );
+
+        if (isDerived) {
+          newConstructor.params = [t.restElement(t.identifier('args'))];
+          newConstructor.body.body.push(
+            t.expressionStatement(
+              t.callExpression(t.super(), [
+                t.spreadElement(t.identifier('args'))
+              ])
+            )
+          );
+        }
+
+        [constructor] = body.unshiftContainer('body', newConstructor);
+      }
+
+      return constructor.get('body');
+    }
+
+    if (path.isFunction()) {
+      if (this.hasOwnParamBindings(path.scope)) {
         // Needs to be attached to the body
-        const bodies = scope.path.get('body').get('body');
+        const bodies = path.get('body').get('body');
         // Don't attach to something that's going to get hoisted,
         // like a default parameter
         // eslint-disable-next-line no-underscore-dangle
-        return bodies.find(b => !b.node._blockHoist);
+        return bodies.find(b => b.node && !b.node._blockHoist);
         // deopt: If here, no attachment path found
       }
       // Doesn't need to be be attached to this scope
@@ -87,6 +134,11 @@ export default class PathHoister {
     // Don't allow paths that have their own lexical environments to pollute
     if (scope.path === path) {
       scope = path.scope.parent;
+    }
+
+    if (scope.path.isClassDeclaration()) {
+      // return this.getClassConstructorPath(path);
+      return path;
     }
 
     if (!scope.path.isProgram() && !scope.path.isFunction()) {
@@ -110,7 +162,7 @@ export default class PathHoister {
 
       // If the binding's attachment appears at or after our attachment point, then we move after it.
       if (bindingParentPath.key >= path.key) {
-        this.attachAfter = true;
+        this.insertFn = insertAfter;
         // eslint-disable-next-line prefer-destructuring
         path = binding.path;
 
@@ -154,9 +206,24 @@ export default class PathHoister {
       return binding.kind === 'param' && binding.constant;
     });
 
-  run() {
-    this.path.traverse(referenceVisitor, this);
-    this.setCompatibleScopes();
+  buildClassPropertySpec = (ref, key, path, state) =>
+    t.expressionStatement(
+      t.callExpression(state.addHelper('defineProperty'), [
+        ref,
+        t.stringLiteral(key.name),
+        path.node
+      ])
+    );
+
+  buildClassPropertyLoose = (ref, key, path) =>
+    t.expressionStatement(
+      t.assignmentExpression('=', t.memberExpression(ref, key), path.node)
+    );
+
+  run(path, state) {
+    this.reset(path);
+    path.traverse(referenceVisitor, this);
+    this.setCompatibleScopes(path);
 
     const attachTo = this.getAttachmentPath();
 
@@ -166,34 +233,41 @@ export default class PathHoister {
 
     // Don't bother hoisting to the same function as this will cause multiple branches to be
     // evaluated more than once leading to a bad optimisation
-    if (attachTo.getFunctionParent() === this.path.getFunctionParent()) {
+    if (attachTo.getFunctionParent() === path.getFunctionParent()) {
       return null;
     }
 
     // Generate declaration and insert it to our point
+    let toAttach;
     let uid = attachTo.scope.generateUidIdentifier('ref');
 
-    const declarator = t.variableDeclarator(uid, this.path.node);
+    if (this.attachToThis) {
+      const buildClassProperty = this.loose
+        ? this.buildClassPropertyLoose
+        : this.buildClassPropertySpec;
 
-    const insertFn = this.attachAfter ? 'insertAfter' : 'insertBefore';
-    const [attached] = attachTo[insertFn]([
-      attachTo.isVariableDeclarator()
+      toAttach = buildClassProperty(t.thisExpression(), uid, path, state);
+    } else {
+      const declarator = t.variableDeclarator(uid, path.node);
+      toAttach = attachTo.isVariableDeclarator()
         ? declarator
-        : t.variableDeclaration('var', [declarator]),
-    ]);
+        : t.variableDeclaration('var', [declarator]);
+    }
 
-    const parent = this.path.parentPath;
+    this.insertFn(attachTo, toAttach);
 
-    if (parent.isJSXElement() && this.path.container === parent.node.children) {
+    if (this.attachToThis) {
+      uid = t.memberExpression(t.thisExpression(), uid);
+    }
+
+    const parent = path.parentPath;
+
+    if (parent.isJSXElement() && path.container === parent.node.children) {
       // Turning the `span` in `<div><span /></div>` to an expression so we need to wrap it with
       // an expression container
       uid = t.JSXExpressionContainer(uid);
     }
 
-    this.path.replaceWith(t.cloneNode(uid));
-
-    return attachTo.isVariableDeclarator()
-      ? attached.get('init')
-      : attached.get('declarations.0.init');
+    path.replaceWith(t.cloneNode(uid));
   }
 }
