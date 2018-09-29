@@ -1,0 +1,7 @@
+{
+  "plugins": [
+    ["@babel/plugin-proposal-class-properties", { "loose": true }],
+    ["@babel/plugin-transform-classes", { "loose": true }],
+    ["../../../../lib", { "unsafeHoistInClass": true, "loose": true }]
+  ]
+}

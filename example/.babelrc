@@ -1,6 +1,4 @@
 {
-  "plugins": [
-    ["../lib", { "loose": true, "unsafeHoistInClass": true }],
-    ["@babel/proposal-class-properties", { "loose": true }]
-  ]
+  "presets": [["@babel/env", { "loose": true }]],
+  "plugins": [["../lib", { "loose": true, "unsafeHoistInClass": true }]]
 }
