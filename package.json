@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-hoist-facc",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Babel plugin to hoist a FACC",
   "main": "lib/index.js",
   "files": [
