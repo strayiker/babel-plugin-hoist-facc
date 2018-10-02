@@ -7,7 +7,9 @@ const inputPath = path.join(__dirname, '../example/input.js');
 const outputPath = path.join(__dirname, '../example/output.js');
 
 const code = babel.transformFileSync(inputPath, {
-  plugins: [plugin],
+  plugins: [
+    [plugin, { loose: true, unsafeHoistInClass: true, warnIfCantHoist: true }],
+  ],
 }).code;
 
 fs.writeFileSync(outputPath, code);

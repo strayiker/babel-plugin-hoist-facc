@@ -1,4 +1,9 @@
 {
   "presets": [["@babel/env", { "loose": true }]],
-  "plugins": [["../lib", { "loose": true, "unsafeHoistInClass": true }]]
+  "plugins": [
+    [
+      "../lib",
+      { "loose": true, "unsafeHoistInClass": true, "warnIfCantHoist": true }
+    ]
+  ]
 }

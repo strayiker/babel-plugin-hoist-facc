@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    [
+      "../../../../lib",
+      { "unsafeHoistInClass": true, "loose": true, "warnIfCantHoist": true }
+    ],
+    ["@babel/plugin-proposal-class-properties", { "loose": true }]
+  ]
+}

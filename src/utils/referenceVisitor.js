@@ -2,6 +2,9 @@ import { types as t } from '@babel/core';
 import iterateTree from './iterateTree';
 import isReferenced from './isReferenced';
 
+const isNonArrowFn = ({ path }) =>
+  path.isFunction() && !path.isArrowFunctionExpression();
+
 export default {
   enter(path) {
     if (!isReferenced(path)) {
@@ -12,8 +15,8 @@ export default {
     // We do have to consider member expressions for hoisting (e.g. `this.component`)
     if (
       path.isJSXIdentifier() &&
-      t.react.isCompatTag(path.node.name) &&
-      !path.parentPath.isJSXMemberExpression()
+      !path.parentPath.isJSXMemberExpression() &&
+      t.react.isCompatTag(path.node.name)
     ) {
       return;
     }
@@ -21,10 +24,7 @@ export default {
     // If the identifier refers to `this`,
     // we need to disallow to hoist higher than the closest, non-arrow functional scope.
     if (path.isThisExpression() || path.node.name === 'this') {
-      const isNonArrowFn = ({ path }) =>
-        path.isFunction() && !path.isArrowFunctionExpression();
       const fnScope = iterateTree(path.scope, 'parent', isNonArrowFn);
-
       let parent = fnScope && fnScope.parent;
 
       if (
@@ -54,5 +54,5 @@ export default {
     }
 
     this.bindings[path.node.name] = binding;
-  }
+  },
 };

@@ -32,7 +32,7 @@ export default class PathHoister {
   isCompatibleScope = scope =>
     !this.breakOn.includes(scope) &&
     !Object.keys(this.bindings).some(
-      key => !scope.bindingIdentifierEquals(key, this.bindings[key].identifier)
+      key => !scope.bindingIdentifierEquals(key, this.bindings[key].identifier),
     );
 
   // Look through all scopes and push compatible ones.
@@ -62,7 +62,7 @@ export default class PathHoister {
       return null;
     }
 
-    let { path } = scope;
+    const { path } = scope;
 
     if (path.isProgram()) {
       return this.getNextScopeAttachmentParent();
@@ -78,7 +78,7 @@ export default class PathHoister {
       const bodies = body.get('body');
 
       let constructor = bodies.find(b =>
-        b.isClassMethod({ kind: 'constructor' })
+        b.isClassMethod({ kind: 'constructor' }),
       );
 
       if (!constructor) {
@@ -86,7 +86,7 @@ export default class PathHoister {
           'constructor',
           t.identifier('constructor'),
           [],
-          t.blockStatement([])
+          t.blockStatement([]),
         );
 
         if (isDerived) {
@@ -94,9 +94,9 @@ export default class PathHoister {
           newConstructor.body.body.push(
             t.expressionStatement(
               t.callExpression(t.super(), [
-                t.spreadElement(t.identifier('args'))
-              ])
-            )
+                t.spreadElement(t.identifier('args')),
+              ]),
+            ),
           );
         }
 
@@ -211,13 +211,13 @@ export default class PathHoister {
       t.callExpression(state.addHelper('defineProperty'), [
         ref,
         t.stringLiteral(key.name),
-        path.node
-      ])
+        path.node,
+      ]),
     );
 
   buildClassPropertyLoose = (ref, key, path) =>
     t.expressionStatement(
-      t.assignmentExpression('=', t.memberExpression(ref, key), path.node)
+      t.assignmentExpression('=', t.memberExpression(ref, key), path.node),
     );
 
   run(path, state) {
@@ -254,7 +254,7 @@ export default class PathHoister {
         : t.variableDeclaration('var', [declarator]);
     }
 
-    this.insertFn(attachTo, toAttach);
+    const [attached] = this.insertFn(attachTo, toAttach);
 
     if (this.attachToThis) {
       uid = t.memberExpression(t.thisExpression(), uid);
@@ -269,5 +269,13 @@ export default class PathHoister {
     }
 
     path.replaceWith(t.cloneNode(uid));
+
+    if (this.attachToThis) {
+      return attached;
+    }
+
+    return attachTo.isVariableDeclarator()
+      ? attached.get('init')
+      : attached.get('declarations.0.init');
   }
 }
