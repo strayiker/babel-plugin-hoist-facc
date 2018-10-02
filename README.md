@@ -51,7 +51,8 @@ class extends React.Component {
 | Option             | Defaults | Description                                                                                                                                                                                                                              |
 | ------------------ | :------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | unsafeHoistInClass |  false   | When `true`, enables the hoisting of FaCC children function, which refers to `this`, to the class constructor. Potentially it is unsafe due to context losing issue, but in regular React life this should`t happens. See example below. |
-| loose              |  false   | When `true`, class properties are compiled to use an assignment expression instead of Object.defineProperty                                                                                                                              |
+| warnIfCantHoist    |  false   | When `true`, display a warnings about child functions that couldn't be hoisted.                                                                                                                                                          |
+| loose              |  false   | When `true`, class properties are compiled to use an assignment expression instead of Object.defineProperty.                                                                                                                             |
 
 ## More examples
 
