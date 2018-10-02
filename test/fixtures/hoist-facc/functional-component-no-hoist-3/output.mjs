@@ -1,6 +1,6 @@
 function _warnAboutCantHoistFacc(fac) {
-  _warnAboutCantHoistFacc = function () {
-    return fac;
+  _warnAboutCantHoistFacc = function (_fac) {
+    return _fac;
   };
 
   console.error('Warning: Failed to hoist a child function. This can be due to the fact that it refers on an identifiers of the higher scope, what blocks the hoisting.');
