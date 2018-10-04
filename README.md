@@ -1,7 +1,5 @@
 # babel-plugin-hoist-facc
 
-> ### Note: This plugin was not intensively tested and was not actively used in production. Use it at one's own risk.
-
 > Treat [FACC](https://medium.com/merrickchristensen/function-as-child-components-5f3920a9ace9) as value types and hoist them to the highest scope
 
 ## Install
