@@ -1,9 +1,7 @@
 import { types as t } from '@babel/core';
 import iterateTree from './iterateTree';
 import isReferenced from './isReferenced';
-
-const isNonArrowFn = ({ path }) =>
-  path.isFunction() && !path.isArrowFunctionExpression();
+import isNonArrowFn from './isNonArrowFn';
 
 export default {
   enter(path) {
@@ -27,15 +25,11 @@ export default {
       const fnScope = iterateTree(path.scope, 'parent', isNonArrowFn);
       let parent = fnScope && fnScope.parent;
 
-      if (
-        parent &&
-        parent.path.isClassDeclaration() &&
-        this.unsafeHoistInClass
-      ) {
-        parent = parent.parent;
-      }
-
       if (parent) {
+        if (this.unsafeHoistInClass && parent.path.isClassDeclaration()) {
+          parent = parent.parent;
+        }
+
         this.breakOn.push(parent);
       }
     }
