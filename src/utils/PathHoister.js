@@ -107,17 +107,12 @@ export default class PathHoister {
     }
 
     if (path.isFunction()) {
-      if (this.hasOwnParamBindings(path.scope)) {
-        // Needs to be attached to the body
-        const bodies = path.get('body').get('body');
-        // Don't attach to something that's going to get hoisted,
-        // like a default parameter
-        // eslint-disable-next-line no-underscore-dangle
-        return bodies.find(b => b.node && !b.node._blockHoist);
-        // deopt: If here, no attachment path found
-      }
-      // Doesn't need to be be attached to this scope
-      return this.getNextScopeAttachmentParent();
+      // Needs to be attached to the body
+      const bodies = path.get('body').get('body');
+      // Don't attach to something that's going to get hoisted,
+      // like a default parameter
+      // eslint-disable-next-line no-underscore-dangle
+      return bodies.find(b => b.node && !b.node._blockHoist);
     }
 
     return null;
@@ -174,6 +169,16 @@ export default class PathHoister {
         });
       }
     });
+
+    // We shouldn't hoist into unreachable code (https://github.com/babel/babel/issues/6751)
+    const checkReachPath = path.isVariableDeclarator() ? path.parentPath : path;
+    for (let i = 0; i < checkReachPath.key; i += 1) {
+      const sibling = checkReachPath.getSibling(i);
+
+      if (sibling.isReturnStatement()) {
+        return null;
+      }
+    }
 
     return path;
   };
